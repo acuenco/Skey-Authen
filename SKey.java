@@ -32,8 +32,6 @@ public class SKey {
 			if(database.containsKey(id)){ 
 				System.out.println("Welcome back " + id);
 				System.out.println("Enter password: ");
-				
-
 				boolean isPassCorrect=false;
 				//challenge response
 				//loop if incorrect password. Please add feature: three failed attempts compromises your registration. Must re register
@@ -59,21 +57,17 @@ public class SKey {
 		boolean isValid = false;
 		
 		//Get users response
+		
 		while(!isValid){
-			sc = new Scanner(System.in);
-			//String str = sc.nextLine();
+			int toRegister = -1;
 			boolean bool = true;
 			while(bool){
+				
 				sc = new Scanner(System.in);
-				if(!sc.hasNextInt()){
-					System.out.println("Try Again");
-					//break;
-					//continue;
-				}else bool = false;
+				String str = sc.nextLine();
+				if(isInteger(str)){ toRegister = Integer.parseInt(str); bool = false;}
+				else System.out.println("Invalid response, Please try again.");
 			}
-			isValid = true;
-			int toRegister = sc.nextInt();
-			
 			if(toRegister == 1){
 				isValid = true;
 				System.out.println("Enter the size of the password chain: ");
@@ -89,7 +83,7 @@ public class SKey {
 				System.exit(0);
 			}
 			else{
-				System.out.println("Invalid response. Try again");
+				System.out.println("Invalid response. Please Try again");
 				
 			}
 		}//end while isValid
@@ -114,7 +108,12 @@ public class SKey {
 		return result;
 	}// end method strArrayToQueue
 	
-	
+	public static boolean isInteger(String s) {
+		for(int i =0; i < s.length();i++){
+			if(!Character.isDigit(s.charAt(i))) return false;
+		}
+	    return true;
+	}// end Function isInteger
 	
 }//end class Skey 
 
