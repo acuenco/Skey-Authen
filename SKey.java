@@ -26,10 +26,17 @@ public class SKey {
 			Scanner sc = new Scanner(System.in);
 			String id = sc.nextLine();
 			
-			//check if user is in the database
-			
-			//if user exists
+			//if user exists in the database
 			if(database.containsKey(id)){ 
+				//If no more passwords in the password chain re-register user
+				//if(database.get(id).peek().isEmpty()){
+				if(database.get(id).size() == 0){
+					System.out.println("You have no more authentifications. Please re-register.");
+					database.remove(id);
+					register(id);
+					continue;
+				}
+				
 				System.out.println("Welcome back " + id);
 				System.out.println("Enter password: ");
 				boolean isPassCorrect=false;
@@ -38,6 +45,7 @@ public class SKey {
 				while(!isPassCorrect){
 					sc = new Scanner(System.in);
 					String passwordAttempt = sc.nextLine();
+
 					if(passwordAttempt.equals(database.get(id).peek())){
 						database.get(id).poll();
 						isPassCorrect =true;
@@ -66,7 +74,12 @@ public class SKey {
 				sc = new Scanner(System.in);
 				String str = sc.nextLine();
 				if(isInteger(str)){ toRegister = Integer.parseInt(str); bool = false;}
-				else System.out.println("Invalid response, Please try again.");
+				else{
+					System.out.println("Invalid response, Please try again.\n");
+					System.out.println("You are a non-registered user. Would you like to register?");
+					System.out.println("Enter (1) for yes or (2) for no");
+				}
+				
 			}
 			if(toRegister == 1){
 				isValid = true;
@@ -76,15 +89,13 @@ public class SKey {
 				Queue<String> pChain = strArrayToQueue(pChain_raw);
 				database.put(id,pChain);
 				System.out.println("You are now registered");
-				return;
 			}
 			else if(toRegister == 2){
 				System.out.println("Program terminating...");
 				System.exit(0);
 			}
 			else{
-				System.out.println("Invalid response. Please Try again");
-				
+				System.out.println("Invalid response. Please Try again");	
 			}
 		}//end while isValid
 	}// end method register
@@ -116,6 +127,3 @@ public class SKey {
 	}// end Function isInteger
 	
 }//end class Skey 
-
-
-//System.out.println("");
