@@ -19,25 +19,20 @@ public class SKey {
 		System.out.println("\n***Welcome to the S/Key simulation server***\n");
 		while(true){
 			
+			mainMenu();
+
 			System.out.println();
 			System.out.println("Please enter ID name: ");
 			
 			//Get ID info from user
+			Scanner scanner = new Scanner(System.in);
 			Scanner sc = new Scanner(System.in);
-			String id = sc.nextLine();
+			String id = scanner.nextLine();
 			
 			//if user exists in the database
 			if(database.containsKey(id)){ 
 				//If no more passwords in the password chain re-register user
-				//if(database.get(id).peek().isEmpty()){
-				if(database.get(id).size() == 0){
-					System.out.println("You have no more authentifications. Please re-register.");
-					database.remove(id);
-					register(id);
-					continue;
-				}
-				
-				System.out.println("Welcome back " + id);
+				System.out.println("server> i= " + (int) (database.get(id).size() - (database.get(id).size()-1)));
 				System.out.println("Enter password: ");
 				boolean isPassCorrect=false;
 				//challenge response
@@ -50,9 +45,21 @@ public class SKey {
 						database.get(id).poll();
 						isPassCorrect =true;
 						System.out.println("Authenticated");
+						System.out.println("Welcome back " + id +" to the simulated database");
+						System.out.println("logging out...");
+						if(database.get(id).size() == 0){
+							System.out.println("\nNote: You have no more authentifications. Please re-register.");
+							database.remove(id);
+							mainMenu();
+							continue;
+						}
 					} else System.out.println("Incorrect password, Please try again\nEnter password: "); 	
 				}//end while
-			}else register(id);
+			}else{
+				//register(id);
+				System.out.println("ID does not exist. Please Register.");
+				mainMenu();
+			}
 		}
 		
 		
@@ -60,8 +67,10 @@ public class SKey {
 	
 	public static void register(String id) throws Exception{
 		Scanner sc = new Scanner(System.in);
-		System.out.println("You are a non-registered user. Would you like to register?");
+	
+		System.out.println("\nWould you like to register with this new ID name?");
 		System.out.println("Enter (1) for yes or (2) for no");
+
 		boolean isValid = false;
 		
 		//Get users response
@@ -89,10 +98,11 @@ public class SKey {
 				Queue<String> pChain = strArrayToQueue(pChain_raw);
 				database.put(id,pChain);
 				System.out.println("You are now registered");
+				mainMenu();
 			}
 			else if(toRegister == 2){
-				System.out.println("Program terminating...");
-				System.exit(0);
+				mainMenu();
+				break;
 			}
 			else{
 				System.out.println("Invalid response. Please Try again");	
@@ -125,5 +135,44 @@ public class SKey {
 		}
 	    return true;
 	}// end Function isInteger
+	
+	public static void mainMenu()throws Exception{
+		boolean flag = false;
+		Scanner sc = new Scanner(System.in);
+		while(!flag){
+			System.out.println("\n----------------------------------------");
+			System.out.println("****Main Menu****");
+			System.out.println("Enter (1) to Log in or (2) to Register.");
+			System.out.println("----------------------------------------\n");
+			
+			String menu = sc.nextLine();
+			if(menu.equals("")) menu = "0";
+			int menuInt = 0;
+
+			sc = new Scanner(System.in);
+			if(isInteger(menu)){
+				menuInt = Integer.parseInt(menu);
+				if(menuInt == 1){
+					break;
+				}
+				else if(menuInt == 2){
+					System.out.println("Welcome to registration.\n");
+					System.out.println("Please enter new ID name: ");
+					@SuppressWarnings("resource")
+					Scanner scanner = new Scanner(System.in);
+					String id = scanner.nextLine();
+					
+					if(database.containsKey(id)){
+						System.out.println("Error: ID exist.");
+						//continue;
+					}else {register(id); break;}
+				}
+				else{
+					System.out.println("Invalid response.Try again\n");
+					//flag = true;
+				}
+			}
+		}
+	}
 	
 }//end class Skey 
