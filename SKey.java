@@ -3,69 +3,88 @@
 //Final Project (S/key)
 //Due: Monday, March 16, 2015
 
-import javax.crypto.*;
+ 
+//import javax.crypto.*;
+
 import javax.xml.bind.DatatypeConverter;
 
-import java.nio.ByteBuffer;
-import java.security.*;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Scanner;
 
 public class SKey {
-	
-	static Hashtable< String, Queue<String> > database = new Hashtable< String, Queue<String> >();
+	//Master database
+	static Hashtable< String, String > database = new Hashtable< String,String >();
+	static Hashtable<String,String[]> skeykeys = new Hashtable<String, String[]>();
 	static MessageDigest md;
+
 	public static void main(String[] args)throws Exception {
-		System.out.println("\n***Welcome to the S/Key simulation server***\n");
+		System.out.println("\n********************************************");
+		System.out.println("*  Welcome to the S/Key simulation server  *");
+		System.out.println("*  Written by Adriene Cuenco               *");
+		System.out.println("*  CS460.01 (W15)                          *");
+		System.out.println("********************************************\n");
 		while(true){
-			md = MessageDigest.getInstance("SHA");
+			//Set encryption method to SHA-256
+			md = MessageDigest.getInstance("SHA-256");
 			mainMenu();
 
 			System.out.println();
-			System.out.println("Please enter ID name: ");
+			System.out.println("Enter ID name: ");
 			
 			//Get ID info from user
 			Scanner scanner = new Scanner(System.in);
 			Scanner sc = new Scanner(System.in);
 			String id = scanner.nextLine();
-			
+			int index =0;
 			//if user exists in the database
 			if(database.containsKey(id)){ 
-				//If no more passwords in the password chain re-register user
-				System.out.println("server> i= " + (int) (database.get(id).size() - (database.get(id).size()-1)));
-				System.out.println("Enter password: ");
+				//Calculate password chain position
+				for(int i = 0; i < skeykeys.get(id).length;i++) {
+					if(skeykeys.get(id)[i].equals(database.get(id)))
+						index = i+1;
+				}
+				System.out.println("Enter password (i="+ index  +"): ");
 				boolean isPassCorrect=false;
 				//challenge response
-				//loop if incorrect password. Please add feature: three failed attempts compromises your registration. Must re register
+				int challenge = 1;
 				while(!isPassCorrect){
+					if(challenge>3){
+						System.out.println("3 failed attmepts. Logging out.");
+						mainMenu();
+						break;
+					}
 					sc = new Scanner(System.in);
 					String passwordAttempt = sc.nextLine();
-
-					if(passwordAttempt.equals(database.get(id).peek())){
-						database.get(id).poll();
+					
+					if(authenticate(id,passwordAttempt)){
 						isPassCorrect =true;
 						System.out.println("Authenticated");
 						System.out.println("Welcome back " + id +" to the simulated database");
 						System.out.println("logging out...");
-						if(database.get(id).size() == 0){
-							System.out.println("\nNote: You have no more authentifications. Please re-register.");
+						if(database.get(id).equals(getSeed(id))){
+							System.out.println("\nNote: You have no more authentifications remaining. Please Re-register.");
 							database.remove(id);
+							skeykeys.remove(id);
 							mainMenu();
 							continue;
 						}
-					} else System.out.println("Incorrect password, Please try again\nEnter password: "); 	
+					} 
+					else{
+						System.out.println("\nIncorrect password, Try again."); 
+						System.out.println("Attempt #: " + challenge + " out of 3");
+						challenge++;
+						System.out.println("Enter password (i="+ index  +"): \n");
+					}
+					
 				}//end while
 			}else{
 				//register(id);
 				System.out.println("ID does not exist. Please Register.");
 				mainMenu();
 			}
-		}
-		
-		
+		}	
 	}//end main 
 	
 	public static void register(String id) throws Exception{
@@ -88,16 +107,28 @@ public class SKey {
 				String str = sc.nextLine();
 				if(isInteger(str)){ toRegister = Integer.parseInt(str); bool = false;}
 				else{
-					System.out.println("Invalid response, Please try again.\n");
+					System.out.println("Invalid response, Try again.\n");
 					System.out.println("You are a non-registered user. Would you like to register?");
 					System.out.println("Enter (1) for yes or (2) for no");
-				}
-				
+				}	
 			}
 			if(toRegister == 1){
 				isValid = true;
-				System.out.println("Enter the amount authentifications(n): ");
-				int n = sc.nextInt();
+				boolean validCheck = true;
+				int n=0;
+				while(validCheck){
+					System.out.println("Enter the amount of authentifications(n) needed: ");
+					String n_str = sc.nextLine();
+					
+					if(isInteger(n_str)){
+						n = Integer.parseInt(n_str);
+						validCheck=false;
+					}
+					else {
+						System.out.println("\nInvalid response. Try Agian.\n");
+					}
+				}
+				
 				
 				System.out.println("Enter secret seed: ");
 				sc = new Scanner(System.in);
@@ -105,17 +136,18 @@ public class SKey {
 				ArrayList<String> pList = new ArrayList<String>();
 				for(int i = 0; i < n; i++){
 					pList.add(seed);
-					seed = secretHashAlgo(seed);
-					
+					seed = secretHashAlgo(seed);	
 				}
 				
 			    //reverse password chain
 				Object[] pChain_raw =  pList.toArray();
 				pChain_raw = reverse(pChain_raw);
-				Queue<String> pChain = strArrayToQueue((String[]) pChain_raw);
+				String pChain = (String) pChain_raw[0];
 				database.put(id,pChain);
-				System.out.println("You are now registered. Please remember your password Chain.\n");
-				for(Object i: pChain_raw) System.out.println(i);
+				skeykeys.put(id, (String[]) pChain_raw);
+				System.out.println("You are now registered. Remember your password chain.\n");
+				//Print password chain for debug purpose. This would not be needed in real life applications
+				for(int i = 1; i < pChain_raw.length;i++) System.out.println("(i = "+ i +") "+pChain_raw[i]);
 				mainMenu();
 			}
 			else if(toRegister == 2){
@@ -123,29 +155,10 @@ public class SKey {
 				break;
 			}
 			else{
-				System.out.println("Invalid response. Please Try again");	
+				System.out.println("Invalid response.Try again");	
 			}
 		}//end while isValid
 	}// end method register
-	
-	public static String[] getPasswordChain(int size){
-		Scanner sc = new Scanner(System.in);
-		String[] result = new String[size];
-		for(int i = 0; i < size; i++){
-			System.out.println("Enter password # " + (i+1));
-			result[i] = sc.nextLine();
-		}
-		System.out.println("Password chain complete.");
-		return result;
-	}//end method getPasswordChain
-	
-	public static Queue<String> strArrayToQueue(String[] sArr){
-		Queue<String> result = new LinkedList<String>();
-		for(String i : sArr){
-			result.add(i);
-		}
-		return result;
-	}// end method strArrayToQueue
 	
 	public static boolean isInteger(String s) {
 		for(int i =0; i < s.length();i++){
@@ -158,10 +171,9 @@ public class SKey {
 		boolean flag = false;
 		Scanner sc = new Scanner(System.in);
 		while(!flag){
-			System.out.println("\n----------------------------------------");
-			System.out.println("****Main Menu****");
-			System.out.println("Enter (1) to Log in or (2) to Register.");
-			System.out.println("----------------------------------------\n");
+			System.out.println("\n-----------------------Main Menu--------------------------");
+			System.out.println("| Enter (1) to Log in or (2) to Register or (3) to exit. |");
+			System.out.println("----------------------------------------------------------\n");
 			
 			String menu = sc.nextLine();
 			if(menu.equals("")) menu = "0";
@@ -174,30 +186,39 @@ public class SKey {
 					break;
 				}
 				else if(menuInt == 2){
-					System.out.println("Welcome to registration.\n");
-					System.out.println("Please enter new ID name: ");
+					System.out.println("\nWelcome to registration.\n");
+					System.out.println("Enter new ID name: ");
 					@SuppressWarnings("resource")
 					Scanner scanner = new Scanner(System.in);
 					String id = scanner.nextLine();
 					
 					if(database.containsKey(id)){
-						System.out.println("Error: ID exist.");
+						System.out.println("Error: ID is taken.");
 						//continue;
 					}else {register(id); break;}
 				}
+				else if(menuInt == 3){
+					System.out.println("\nThank you for using S/Key service.");
+					System.out.println("Simulation terminating.");
+					System.out.println("Goodbye\n");
+					System.exit(0);
+					
+				}
 				else{
-					System.out.println("Invalid response.Try again\n");
+					System.out.println("\nInvalid response.Try again\n");
 					//flag = true;
 				}
 			}
 		}
 	}//End method mainMenu
+	
 	public static String secretHashAlgo(String plain) throws Exception{
 		String result="";
 		byte[] hashBytes = md.digest(plain.getBytes("UTF-8"));
 		result = DatatypeConverter.printHexBinary(hashBytes);
 		return result;
 	}//end method secretHashAlgo
+	
 	public static Object[] reverse(Object[] str){
 		Object[] result = new String[str.length];
 		int ctr = 0;
@@ -208,8 +229,17 @@ public class SKey {
 		return result;
 	}// end method reverse
 	
-	public static void authenticate(String password){
-		
+	public static boolean authenticate(String id, String password) throws Exception{
+		if(secretHashAlgo(password).equals(database.get(id))){
+			database.replace(id, password);
+			return true;
+		}
+		return false;
 	}//end method authenticate
+	
+	public static String getSeed(String id){
+		int size = skeykeys.get(id).length;
+		return skeykeys.get(id)[size-1];
+	}// end method getSeed
 	
 }//end class Skey 
