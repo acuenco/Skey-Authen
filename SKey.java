@@ -4,8 +4,11 @@
 //Due: Monday, March 16, 2015
 
 import javax.crypto.*;
+import javax.xml.bind.DatatypeConverter;
 
+import java.nio.ByteBuffer;
 import java.security.*;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -14,11 +17,11 @@ import java.util.Scanner;
 public class SKey {
 	
 	static Hashtable< String, Queue<String> > database = new Hashtable< String, Queue<String> >();
-	
+	static MessageDigest md;
 	public static void main(String[] args)throws Exception {
 		System.out.println("\n***Welcome to the S/Key simulation server***\n");
 		while(true){
-			
+			md = MessageDigest.getInstance("SHA");
 			mainMenu();
 
 			System.out.println();
@@ -67,6 +70,7 @@ public class SKey {
 	
 	public static void register(String id) throws Exception{
 		Scanner sc = new Scanner(System.in);
+		MessageDigest md = MessageDigest.getInstance("SHA-256");
 	
 		System.out.println("\nWould you like to register with this new ID name?");
 		System.out.println("Enter (1) for yes or (2) for no");
@@ -92,12 +96,26 @@ public class SKey {
 			}
 			if(toRegister == 1){
 				isValid = true;
-				System.out.println("Enter the size of the password chain: ");
-				int size = sc.nextInt();
-				String[] pChain_raw = getPasswordChain(size);
-				Queue<String> pChain = strArrayToQueue(pChain_raw);
+				System.out.println("Enter the amount authentifications(n): ");
+				int n = sc.nextInt();
+				
+				System.out.println("Enter secret seed: ");
+				sc = new Scanner(System.in);
+				String seed = sc.nextLine();
+				ArrayList<String> pList = new ArrayList<String>();
+				for(int i = 0; i < n; i++){
+					pList.add(seed);
+					seed = secretHashAlgo(seed);
+					
+				}
+				
+			    //reverse password chain
+				Object[] pChain_raw =  pList.toArray();
+				pChain_raw = reverse(pChain_raw);
+				Queue<String> pChain = strArrayToQueue((String[]) pChain_raw);
 				database.put(id,pChain);
-				System.out.println("You are now registered");
+				System.out.println("You are now registered. Please remember your password Chain.\n");
+				for(Object i: pChain_raw) System.out.println(i);
 				mainMenu();
 			}
 			else if(toRegister == 2){
@@ -173,6 +191,25 @@ public class SKey {
 				}
 			}
 		}
-	}
+	}//End method mainMenu
+	public static String secretHashAlgo(String plain) throws Exception{
+		String result="";
+		byte[] hashBytes = md.digest(plain.getBytes("UTF-8"));
+		result = DatatypeConverter.printHexBinary(hashBytes);
+		return result;
+	}//end method secretHashAlgo
+	public static Object[] reverse(Object[] str){
+		Object[] result = new String[str.length];
+		int ctr = 0;
+		for( int i = str.length-1; i >= 0; i-- ){
+			result[ctr] = str[i];
+			ctr++;
+		}
+		return result;
+	}// end method reverse
+	
+	public static void authenticate(String password){
+		
+	}//end method authenticate
 	
 }//end class Skey 
