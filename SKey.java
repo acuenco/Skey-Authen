@@ -3,20 +3,21 @@
 //Final Project (S/key)
 //Due: Monday, March 16, 2015
 
- 
-//import javax.crypto.*;
-
-import javax.xml.bind.DatatypeConverter;
-
 import java.security.MessageDigest;
+
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Scanner;
+import javax.xml.bind.DatatypeConverter;
 
 public class SKey {
-	//Master database
+	//Master database hashes id and current password in the password chain
 	static Hashtable< String, String > database = new Hashtable< String,String >();
+	
+	//skeykeys hashes id and password chain. For debug only, in real life password chain should not be saved in a database
 	static Hashtable<String,String[]> skeykeys = new Hashtable<String, String[]>();
+	
+	//Initialize SHA-256 instance
 	static MessageDigest md;
 
 	public static void main(String[] args)throws Exception {
@@ -40,7 +41,7 @@ public class SKey {
 			int index =0;
 			//if user exists in the database
 			if(database.containsKey(id)){ 
-				//Calculate password chain position
+				//Calculate password chain position, i
 				for(int i = 0; i < skeykeys.get(id).length;i++) {
 					if(skeykeys.get(id)[i].equals(database.get(id)))
 						index = i+1;
@@ -60,9 +61,11 @@ public class SKey {
 					
 					if(authenticate(id,passwordAttempt)){
 						isPassCorrect =true;
-						System.out.println("Authenticated");
-						System.out.println("Welcome back " + id +" to the simulated database");
+						System.out.println("\n"+id + " has been authenticated");
+						System.out.println("\nWelcome back to the simulated database\n");
 						System.out.println("logging out...");
+						//The seed must not be saved anywhere but for simulation purpose it can serve to 
+						//signify the user has no more authentications and can provide user with i, the count.
 						if(database.get(id).equals(getSeed(id))){
 							System.out.println("\nNote: You have no more authentifications remaining. Please Re-register.");
 							database.remove(id);
@@ -89,15 +92,13 @@ public class SKey {
 	
 	public static void register(String id) throws Exception{
 		Scanner sc = new Scanner(System.in);
-		MessageDigest md = MessageDigest.getInstance("SHA-256");
 	
 		System.out.println("\nWould you like to register with this new ID name?");
 		System.out.println("Enter (1) for yes or (2) for no");
 
 		boolean isValid = false;
 		
-		//Get users response
-		
+		//Decide if user wants to continue with registration
 		while(!isValid){
 			int toRegister = -1;
 			boolean bool = true;
@@ -105,7 +106,8 @@ public class SKey {
 				
 				sc = new Scanner(System.in);
 				String str = sc.nextLine();
-				if(isInteger(str)){ toRegister = Integer.parseInt(str); bool = false;}
+				if(str.equals("")){ System.out.println("\nInvalid response. Try Agian.\n");}
+				else if(isInteger(str)){ toRegister = Integer.parseInt(str); bool = false;}
 				else{
 					System.out.println("Invalid response, Try again.\n");
 					System.out.println("You are a non-registered user. Would you like to register?");
@@ -119,17 +121,19 @@ public class SKey {
 				while(validCheck){
 					System.out.println("Enter the amount of authentifications(n) needed: ");
 					String n_str = sc.nextLine();
-					
-					if(isInteger(n_str)){
+					if(n_str.equals("")){
+						System.out.println("\nInvalid response. Try Agian.\n");
+					}
+					else if(isInteger(n_str)){
 						n = Integer.parseInt(n_str);
+						//make sure input is greater than 1 else throw error
+						if(n <= 1){System.out.println("\nInvalid response. Try Agian.\n");continue;}
 						validCheck=false;
 					}
 					else {
 						System.out.println("\nInvalid response. Try Agian.\n");
 					}
-				}
-				
-				
+				}		
 				System.out.println("Enter secret seed: ");
 				sc = new Scanner(System.in);
 				String seed = sc.nextLine();
@@ -143,7 +147,9 @@ public class SKey {
 				Object[] pChain_raw =  pList.toArray();
 				pChain_raw = reverse(pChain_raw);
 				String pChain = (String) pChain_raw[0];
+				//only save the the nth encrypted password to database
 				database.put(id,pChain);
+				//Used for debug, not a good idea to keep password chain on the system
 				skeykeys.put(id, (String[]) pChain_raw);
 				System.out.println("You are now registered. Remember your password chain.\n");
 				//Print password chain for debug purpose. This would not be needed in real life applications
@@ -194,7 +200,6 @@ public class SKey {
 					
 					if(database.containsKey(id)){
 						System.out.println("Error: ID is taken.");
-						//continue;
 					}else {register(id); break;}
 				}
 				else if(menuInt == 3){
@@ -212,6 +217,7 @@ public class SKey {
 		}
 	}//End method mainMenu
 	
+	//The secret cryptographic hashing algorithm(SHA-256)
 	public static String secretHashAlgo(String plain) throws Exception{
 		String result="";
 		byte[] hashBytes = md.digest(plain.getBytes("UTF-8"));
@@ -230,6 +236,8 @@ public class SKey {
 	}// end method reverse
 	
 	public static boolean authenticate(String id, String password) throws Exception{
+		//After running the attempted password through the secret cryptographic hashing algorithm, if it equals the previous
+		//password then return true and replace previous password with attempted password,moving down the password chain.
 		if(secretHashAlgo(password).equals(database.get(id))){
 			database.replace(id, password);
 			return true;
