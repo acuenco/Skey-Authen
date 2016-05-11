@@ -1,7 +1,5 @@
-//Adriene Cuenco
-//CS460.01
-//Final Project (S/key)
-//Due: Monday, March 16, 2015
+//Created by Adriene Cuenco
+// S/KEY simulator
 
 import java.security.MessageDigest;
 
@@ -24,7 +22,6 @@ public class SKey {
 		System.out.println("\n********************************************");
 		System.out.println("*  Welcome to the S/Key simulation server  *");
 		System.out.println("*  Written by Adriene Cuenco               *");
-		System.out.println("*  CS460.01 (W15)                          *");
 		System.out.println("********************************************\n");
 		while(true){
 			//Set encryption method to SHA-256
